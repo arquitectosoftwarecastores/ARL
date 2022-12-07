@@ -1,0 +1,87 @@
+<?PHP
+// *********************************************************************************************************************
+//  Genera XML con la informacion relacionada de las paradas de los vehículos
+//  de acuerdo a los criterios seleccionados
+// *********************************************************************************************************************
+  session_start();
+  error_reporting(E_ALL);
+  ini_set('display_errors', true);
+  date_default_timezone_set("America/Mexico_City");
+
+
+  header("Content-Type: application/vnd.ms-excel");
+  header("Expires: 0");
+  header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
+  header("Content-Disposition: attachment; filename=ReporteDeParadas.csv");
+
+    include ('../conexion/conexion.php');
+    //include ('../conexion/conexion.php');
+    include ('../posiciones/app_referencia.php');
+    include ('../funciones/distancia.php');
+
+
+  $vehiculo=$_POST['vehiculo'];
+  $from=$_POST['from'];
+  $to=$_POST['to'];
+  $distancia=$_POST["distancia"];
+
+
+  $consulta1  = " SELECT * FROM tb_vehiculos
+                 WHERE txt_economico_veh=?";
+  $query1 = $conn->prepare($consulta1);
+  $query1->bindParam(1, $vehiculo);
+  $query1->execute();
+  $nserie=0;
+  while($registro1 = $query1->fetch())
+	{
+     $eco = $registro1['txt_economico_veh'];
+     $nserie = $registro1["num_serie_veh"];
+     $fecha_actual = date("Y/m/d H:i:s",time());
+     $ubicacion_actual = $registro1['txt_posicion_veh'];
+     $lat_actual = $registro1['num_latitud_veh'];
+     $lon_actual = $registro1['num_longitud_veh'];
+	}
+  if($nserie==0)
+  {
+    echo "<p>No se encontró el vehículo.</p>";
+    exit();
+  }
+
+  $strSQL  = " SELECT * FROM tb_posiciones WHERE num_nserie_pos='".$nserie."'
+               AND DATE(fec_ultimaposicion_pos) >= '".date("Y/m/d", strtotime($from))."'
+               AND DATE(fec_ultimaposicion_pos) <= '".date("Y/m/d", strtotime($to))."'
+               ORDER BY fec_ultimaposicion_pos ";
+
+?>
+
+
+<?php
+   echo "Económico;Fecha de entrada;Fecha de salida;Tiempo permanencia;Ubicación;Geocerca\n";
+  $query = $conn->prepare($strSQL);
+  $query->execute();
+  $contador=0;
+  $distanciarecorrida=0;
+  while ($registro = $query->fetch())
+  {
+    if($contador)
+      $distancia=distancia($latitudanterior, $longitudanterior,$registro["num_latitud_pos"], $registro["num_longitud_pos"]);
+    else
+     {
+      $distancia=0;
+     }
+    $latitudanterior=$registro["num_latitud_pos"];
+    $longitudanterior=$registro["num_longitud_pos"];
+    $contador++;
+    $distanciarecorrida+=$distancia;
+
+    echo date('Y-m-d H:i:s',strtotime('-'.$ajustegps.' hour',strtotime($registro['fec_ultimaposicion_pos']))).";";
+    echo georeferencia($registro["num_latitud_pos"],$registro["num_longitud_pos"],$conn).",".georeferencia_pi($registro["num_latitud_pos"],$registro["num_longitud_pos"],$conn).";";
+    echo round($registro["txt_velocidad_pos"]/0.62137,2)." Km/hr.;";
+    echo round($distanciarecorrida,2).";";
+    if ($registro["num_ignicion_pos"]) echo "Encendido;"; else echo "Apagado;";
+    echo $registro['txt_odometro_pos'].";";
+    echo $registro['txt_combtot_pos'].";";
+    echo "\n";
+
+  }
+?>

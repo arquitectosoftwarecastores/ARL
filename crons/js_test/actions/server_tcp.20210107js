@@ -1,0 +1,158 @@
+'use strict'
+
+// Modulos
+const net = require('net')
+const express = require('express')
+const bodyParser = require('body-parser')
+const HexString = require('../custom_modules/HexString.class')
+const app = express()
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: true }))
+
+var arrSockets = []
+
+module.exports = async (port) => {
+  console.log('\nINICIANDO SERVIDOR EN PUERTO ' + port + '\n')
+  // Valida PUERTO en argumento
+  if (port) {
+    // SERVIDOR TCP
+    const serv = await net.createServer(serverTCP)
+    serv.listen(port)
+    const address = serv.address()
+    console.log(`SERVIDOR TCP ESCUCHANDO EN ${address.address}:${address.port}\n`)
+
+    // SERVIDOR HTTP
+    serverHTTP(app)
+    app.listen(3330)
+  } else {
+    console.log('Indique el Puerto como argumento\n')
+  }
+}
+
+/** Funciones Para Montar Servidor TCP y HTTP */
+
+function serverTCP (socket) {
+  const address = socket.remoteAddress
+  socket.setEncoding('hex')
+  let ban = true
+
+  /** Handler para cada la obtencion de Cadenas */
+  socket.on('data', (data) => {
+    // Valida Conexion
+    console.log('\x1b[37m', '\n[TCP] DATOS RECIBIDOS ' + address + '\n\t' + data)
+    data = data.substr(8)
+
+    // Crea objeto y obtiene Headers
+    const hexS = new HexString(data)
+    hexS.processHeaders()
+    // Valida nueva conexion
+    if (ban) {
+      arrSockets.push({
+        serie: hexS.optionHeader.mobileID,
+        socket: socket
+      })
+      console.log(' **** NUEVA CONEXION ****')
+      ban = false
+    }
+
+    let cmd = ''
+    let seq = ''
+    let resGPS
+
+    switch (hexS.messageHeader.messageType) {
+      case '02':
+
+        /*
+        if (hexS.optionHeader.mobileID == 4662489046) {
+          console.log('**********************************************************')
+          console.log(hexS.optionHeader.mobileID)
+        }
+        */
+        console.log('** Event Report message **')
+        cmd = hexS.optionHeader.raw
+        seq = hexS.messageHeader.messageSeq
+        // CMD Res
+        resGPS = 'aa55000D' + cmd + '0201' + seq + '020000000000'
+        socket.write(resGPS, 'hex')
+        //      console.log('Respuesta a GPS: ' + resGPS)
+        // Inserta en avl_cadenas_g
+        hexS.insertCadenasg(address)
+        console.log('ESN: ' + hexS.optionHeader.mobileID)
+        break
+
+      case '01':
+        console.log('\x1b[34m', '** ACK/NAK message **')
+        cmd = hexS.optionHeader.raw
+        socket.write(cmd + '02010001020000000000')
+        console.log('ESN: ' + hexS.optionHeader.mobileID)
+        break
+
+      default:
+        console.log('\x1b[37m', '** Unknown message **')
+        break
+    }
+  })
+
+  /** Handler para cierra de socket */
+  socket.on('close', (data) => {
+    console.info('\n---- CONEXION TCP CERRADA ' + address + ' ----\n')
+    closeConection()
+  })
+
+  /** Handler para Errores */
+  socket.on('error', (data) => {
+    console.error('\n<<<< <<<< <<  ERROR  >> >>>> >>>>\n')
+    console.error(data)
+  })
+
+  /** Funciones */
+
+  function closeConection () {
+    // Elimina conexión con GPS
+    for (let i = 0; i < arrSockets.length; i++) {
+      const sock = arrSockets[i]
+      if (socket === sock.socket) {
+        arrSockets.splice(i)
+      }
+    }
+    ban = false
+    console.log('Conexiones Activas: ' + arrSockets.length)
+  }
+}
+
+function serverHTTP(exp) {
+  exp.post('/command', (req, res) => {
+    let sendCmd = false
+    if (req.body) {
+      const bdy = req.body
+      if (bdy.serie !== undefined & bdy.action !== undefined &
+        bdy.peg !== undefined & bdy.event !== undefined) {
+        const com = new HexString()
+        // Realiza busqueda de socket
+        for (let i = 0; i < arrSockets.length; i++) {
+          const socket = arrSockets[i]
+          // Valida serie
+          if (socket.serie === bdy.serie) {
+            com.createCommand(bdy.action, bdy.peg, bdy.event)
+            socket.socket.write(com.commad)
+            console.log('Enviando Comando a ' + bdy.serie + '\n - CMD: ' + com.commad)
+            sendCmd = true
+          }
+        }
+      } else {
+        console.log('NO PARAMETERS')
+      }
+      // Valida el envio del comando
+      if (sendCmd) {
+        console.log(bdy.serie)
+        res.send(bdy)
+      } else {
+        console.log('\nGPS NOT FOUND\n')
+        res.send('GPS NOT FOUND')
+      }
+    } else {
+      console.log(req.body)
+      res.send('NO PARAMETERS')
+    }
+  })
+}
