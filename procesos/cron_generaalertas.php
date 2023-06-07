@@ -6,10 +6,8 @@ include ('../funciones/distancia.php');
 include ('../funciones/puntoseguro.php');
 include ('../posiciones/app_referencia.php');
 include ('../funciones/checazona.php');
-//include("../funciones/almacenaconsulta.php");
 date_default_timezone_set("America/Mexico_City");
 $c = 0;
-//do {
   $consulta = " SELECT * FROM monitoreo.tb_remolques r join monitoreo.geocercasporunidad gpu on gpu.economico = r.txt_economico_rem where fec_posicion_rem > (now() - '24:00:00'::interval) and r.estatus = 1 -- and r.txt_economico_rem = '11544'";
   $query = $conn->prepare($consulta);
   $query->execute();
@@ -88,29 +86,25 @@ $c = 0;
                   $querynp->execute();
                   $querynp->closeCursor();
 
-                  include_once("/var/www/html/PHPMailer_v5.1-master/class.phpmailer.php");
-                  include_once("/var/www/html/PHPMailer_v5.1-master/class.smtp.php");
-                  $mail = new PHPMailer();
-                  $mail->Host = "10.3.1.181"; // A RELLENAR. Aquí pondremos el SMTP a utilizar. Por ej. mail.midominio.com
-                  $mail->Username = "gerentemseg_lem@castores.com.mx"; // A RELLENAR. Email de la cuenta de correo. ej.info@midominio.com La cuenta de correo debe ser creada previamente.
-                  $mail->Password = "JR505nCOvf"; // A RELLENAR. Aqui pondremos la contraseña de la cuenta de correo
-                  $mail->Port = 500; // Puerto de conexión al servidor de envio.
-                  $mail->AddAddress("gerenteinnovacionti_lem@castores.com.mx");
-                  $mail->AddAddress("jefenalintercambio_lem@castores.com.mx");
-                  $mail->AddAddress("coordintercambioremolques_lem@castores.com.mx");
-                  $mail->AddAddress("monitoreoremolques_lem@castores.com.mx");
-                  $mail->AddAddress("gerentedeflotaremolques_lem@castores.com.mx");	
-                  $mail->Subject = "Vehículo en Corporativo para mantenimiento"; // Este es el titulo del email.
-                  $body = "Por medio del presente correo se le notifica que el remolque con número económico ".$economico1." se encuentra con plazo de mantenimiento vencido y actualmente se encuentra en corporativo";
-                  $mail->Body = $body; // Mensaje a enviar.
-                  $exito = $mail->Send(); // Envía el correo.
-                  if ($exito) {
-                      echo "El correo fue enviado correctamente.";
-                  } else {
-                      echo "Hubo un problema. Contacta a un administrador.";
-                  }  
-
-
+                  $consultaCorreo = "select * from tb_correospormodulos where modulo='mantenimiento' LIMIT 1;";
+                  $ejecucionConsulta = $conn->prepare($consultaCorreo);
+                  $ejecucionConsulta->execute();
+                  $correo = $ejecucionConsulta->fetch();
+                  if(isset($correo["correos"])){
+                    $asunto = "Vehículo en Corporativo para mantenimiento";
+                    $mensaje = "Por medio del presente correo se le notifica que el remolque con número económico ".$economico1." se encuentra con plazo de mantenimiento vencido y actualmente se encuentra en corporativo";
+                    $correosDestinatarios = explode(";",$correo["correos"]);
+                    $correosConCopia = explode(";",$correo["cc"]);
+                    $configuracionCorreo = array(
+                      "host" => $correo["host"],
+                      "userName" => $correo["username"],
+                      "password" => $correo["password"],
+                      "port" => $correo["port"]
+                    );
+                    
+                    include_once('../util/sendMail.php');
+                    sendMail($configuracionCorreo, $asunto, $mensaje, $correosDestinatarios,$correosConCopia);
+                  }
               }
               $queryultale->closeCursor();
           }
@@ -192,67 +186,8 @@ $c = 0;
               $querynp->closeCursor();
           }
         }
-        /*
-        if($latitud1>34){
-          echo " *** Se inserto alerta de Exceso de Kilometraje*** ";
-          $consultanp = " INSERT INTO tb_alertas
-                                 (fk_clave_tipa,fec_fecha_ale,txt_ubicacion_ale,txt_economico_rem,txt_ignicion_ale,num_prioridad_ale,num_latitud_ale,num_longitud_ale,txt_upsmart_ale,num_tipo_ale)
-                                 VALUES (203,now(),?,?,?,3,?,?,?,0)";
-          $querynp = $conn->prepare($consultanp);
-          $querynp->bindParam(1, $ubicacion1);
-          $querynp->bindParam(2, $economico1);
-          $querynp->bindParam(3, $ignicion1);
-          $querynp->bindParam(4, $latitud1);
-          $querynp->bindParam(5, $longitud1);
-          $querynp->bindParam(6, $ubicacion2);
-          $querynp->execute();
-          $querynp->closeCursor();
-          }*/
       }
     echo "<br>";
-  
-  /*
-  if(($fronteriza!=0){
-      $consultasinpos = "select count(*) as bandera from monitoreo.vw_unidades_no_reportando_riesgo where economico = ? and economico not like '00%' limit 1";
-      $querysinpos = $conn->prepare($consultasinpos);
-      $querysinpos->bindParam(1, $economico1);
-      $querysinpos->execute();
-      $registrosinpos = $querysinpos->fetch();
-      if (($registrosinpos["bandera"]) == 1) {
-          $consultaultale = "select count(*) as bandera from tb_alertas where txt_economico_veh = ? and fk_clave_tipa = 201 and fec_fecha_ale > now() - interval '35 minute' limit 1";
-          $queryultale = $conn->prepare($consultaultale);
-          $queryultale->bindParam(1, $economico1);
-          $queryultale->execute();
-          $registroultale = $queryultale->fetch();
-          if ($registroultale["bandera"] == 0) {
-              $consultaunicon = "select count(*) as bandera from monitoreo.unidades_sin_posicionar where txt_economico_veh = ? and fecha_registro > now() - interval '720 minute' limit 1";
-              $queryunicon = $conn->prepare($consultaunicon);
-              $queryunicon->bindParam(1, $economico1);
-              $queryunicon->execute();
-              $registrounicon = $queryunicon->fetch();
-              if ($registrounicon["bandera"] == 0) {
-                  echo " *** Se inserto alerta de sin posicionar";
-                  $consultanp = " INSERT INTO tb_alertas
-                                         (fk_clave_tipa,fec_fecha_ale,txt_ubicacion_ale,txt_economico_veh,txt_ignicion_ale,num_prioridad_ale,num_latitud_ale,num_longitud_ale,txt_upsmart_ale,num_tipo_ale)
-                                         VALUES (201,now(),?,?,?,3,?,?,?,0)";
-                  $querynp = $conn->prepare($consultanp);
-                  $querynp->bindParam(1, $ubicacion1);
-                  $querynp->bindParam(2, $economico1);
-                  $querynp->bindParam(3, $ignicion1);
-                  $querynp->bindParam(4, $latitud1);
-                  $querynp->bindParam(5, $longitud1);
-                  $querynp->bindParam(6, $ubicacion2);
-                  $querynp->execute();
-                  $querynp->closeCursor();
-              }
-              $queryunicon->closeCursor();
-          }
-          $queryultale->closeCursor();
-      }
-      $querysinpos->closeCursor();
-  }
-  */
-
 
   if ($fronteriza1 !== $fronteriza) {
     echo " Actualiza frontera *********************************" . $fronteriza;
@@ -290,62 +225,5 @@ $c = 0;
     $queryultaang -> closeCursor();
   }
   
-
-
-  /*
-  $consultadesvio = "select count(*) as bandera from monitoreo.tb_vehiculos v join monitoreo.geocercasporunidad g on g.economico=v.txt_economico_veh where g.desvio <> 0 and v.txt_economico_veh = ? and v.txt_economico_veh not like '00%'";
-      $querydesvio = $conn->prepare($consultadesvio);
-      $querydesvio->bindParam(1, $economico1);
-      $querydesvio->execute();
-      $registrosdesvio = $querydesvio->fetch();
-      if (($registrosdesvio["bandera"]) == 1) {
-          $consultaultale = "select count(*) as bandera from tb_alertas where txt_economico_veh = ? and fk_clave_tipa = 203 and fec_fecha_ale > now() - interval '15 minute' limit 1";
-          $queryultale = $conn->prepare($consultaultale);
-          $queryultale->bindParam(1, $economico1);
-          $queryultale->execute();
-          $registroultale = $queryultale->fetch();
-          if ($registroultale["bandera"] == 0) {
-              $consultaunicon = "select count(*) as bandera from monitoreo.unidades_sin_posicionar where txt_economico_veh = ? and fecha_registro > now() - interval '60 minute' limit 1";
-              $queryunicon = $conn->prepare($consultaunicon);
-              $queryunicon->bindParam(1, $economico1);
-              $queryunicon->execute();
-              $registrounicon = $queryunicon->fetch();
-              if ($registrounicon["bandera"] == 0) {
-                  echo " *** Se inserto alerta de desvio de ruta";
-                  $consultanp = " INSERT INTO tb_alertas
-                                         (fk_clave_tipa,fec_fecha_ale,txt_ubicacion_ale,txt_economico_veh,txt_ignicion_ale,num_prioridad_ale,num_latitud_ale,num_longitud_ale,txt_upsmart_ale,num_tipo_ale)
-                                         VALUES (203,now(),?,?,?,3,?,?,?,0)";
-                  $querynp = $conn->prepare($consultanp);
-                  $querynp->bindParam(1, $ubicacion1);
-                  $querynp->bindParam(2, $economico1);
-                  $querynp->bindParam(3, $ignicion1);
-                  $querynp->bindParam(4, $latitud1);
-                  $querynp->bindParam(5, $longitud1);
-                  $querynp->bindParam(6, $ubicacion2);
-                  $querynp->execute();
-                  $querynp->closeCursor();
-              }
-             $queryunicon->closeCursor();
-          }
-        $queryultale->closeCursor();
-      }
-      $querydesvio->closeCursor();
-  echo "<br>";
-  */
   }
   
-
-
-  /* Inserta Fecha de Ejecución 
-      $actualiza_cron_historico = "insert into monitoreo.tb_estatus_crones_historico(id_cron,fecha_registro) values (2,now())";
-      $query3 = $conn->prepare($actualiza_cron_historico);
-      $query3->execute();
-      $query3->closeCursor(); 
-      $actualiza_cron = "update monitoreo.tb_estatus_crones set ultimo_registro=now() where id_cron=2";
-      $query4 = $conn->prepare($actualiza_cron);
-      $query4->execute();
-      $query4->closeCursor();
-      $query->closeCursor();
-      $c = 0;*/
-//} while(true);
-?>
