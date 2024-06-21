@@ -34,7 +34,9 @@
     <div class="col-md-6">
       <h1>DIBUJA ZONA <?php echo $registro2["txt_nombre_zon"]?></h1>      
     </div>
-
+ <div class="col-md-3">
+      <button type="submit" id="agrega"  class="btn btn-primary">GUARDAR CAMBIOS</button>
+    </div>
     <div class="col-md-3">
       <a href="#" onclick="history.go(-1); return false;"><button type="button"  class="btn btn-warning">REGRESAR</button></a>   
     </div>  
@@ -175,3 +177,9 @@ function openInfoWindow(marker) {
 </script>
 
   <script src="https://maps.googleapis.com/maps/api/js?key=<?php echo $gmk ?>&callback=initMap"></script>
+  <?php
+  include_once('helpers/LoggerApiGoogleMaps.php');
+  $log = new LoggerApiGoogleMaps($conn);
+  $log->saveLog($_SESSION["usuario"], 5, $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']);
+  unset($log);
+  ?>

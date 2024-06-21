@@ -1,4 +1,11 @@
 # ARL
+## Version 1.1.1.0
+- __Ticket/Proyecto:__ ARL
+- __Autor:__ Jose Eduardo Chagala Martinez
+- __Fecha:__ 21/06/2024
+- __Descripción:__ 
+    - Se agrego log en los módulos donde se consume la api de google maps para saber el numero de peticiones que se realizan a dicha API, el log se guarda en la base de dato
+
 ## Versión: 1.1.0.0
 - __Ticket/Proyecto:__ 030903
 - __Autor:__ Jose Eduardo Chagala Martinez

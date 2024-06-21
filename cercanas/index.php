@@ -216,13 +216,12 @@
 
 
   <script src="https://maps.googleapis.com/maps/api/js?key=<?php echo $gmk; ?>&libraries=places&callback=initMap"></script>
-
-
-
-
-
-
-
+  <?php
+    include_once('helpers/LoggerApiGoogleMaps.php');
+    $log = new LoggerApiGoogleMaps($conn);
+    $log->saveLog($_SESSION["usuario"], 1, $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']);
+    unset($log);
+  ?>
   <script>
     // Define the overlay, derived from google.maps.OverlayView
     function Label(opt_options) {
@@ -470,7 +469,8 @@
 
 
 
-<?php } else { ?>
+<?php 
+} else { ?>
 
   <div class="container">
     <div class="alert alert-warning">

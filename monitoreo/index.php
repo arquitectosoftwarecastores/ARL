@@ -610,7 +610,12 @@ if ($permiso > 0) {
   </script>
 
   <script src="https://maps.googleapis.com/maps/api/js?key=<?php echo $gmk; ?>&language=es-MX&region=MX"></script>
-
+  <?php
+    include_once('helpers/LoggerApiGoogleMaps.php');
+    $log = new LoggerApiGoogleMaps($conn);
+    $log->saveLog($_SESSION["usuario"], 2, $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']);
+    unset($log);    
+  ?>
   <div class="container-fluid fondocolor">
     <div class="row">
       <div class="col-md-1 mt-2 mb-2">

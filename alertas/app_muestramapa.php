@@ -161,3 +161,9 @@ $longitudcentro = -101.788702;
     }
   </script>
   <script src="https://maps.googleapis.com/maps/api/js?key=<?php echo $gmk ?>&callback=initMap"></script>
+  <?php
+  include_once('../helpers/LoggerApiGoogleMaps.php');
+  $log = new LoggerApiGoogleMaps($conn);
+  $log->saveLog($_SESSION["usuario"], 7, $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']);
+  unset($log);
+  ?>
