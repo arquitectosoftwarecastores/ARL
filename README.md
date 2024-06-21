@@ -1,12 +1,11 @@
 # ARL
 
-## Version 1.1.0.0
-- __Ticket/Proyecto:__ 030903
+## Version 1.1.1.0
+- __Ticket/Proyecto:__ ARL
 - __Autor:__ Jose Eduardo Chagala Martinez
-- __Fecha:__ 07/06/2023
+- __Fecha:__ 21/06/2024
 - __Descripción:__ 
-    - El fragmento de código de envio de correo del archivo cron_generaalertas se paso a un archivo independiente dentro de la funcion sendMail esto para que se pueda reutilizar el código.
-    El ticket 030903 especifica agregar el correo coordmonitoremolques_lem@castores.com.mx para que reciba las alertas que envia el sistema por lo que se creo una tabla con el nombre tb_correospormodulos donde se guardaran los correos por modulo, esto permitirá que en un futuro si desean agregar un nuevo correo o eliminarlo sea por medio de base de datos.
+    - Se agrego log en los módulos donde se consume la api de google maps para saber el numero de peticiones que se realizan a dicha API, el log se guarda en la base de dato
 
 --------
 

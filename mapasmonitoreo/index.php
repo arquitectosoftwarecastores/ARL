@@ -140,8 +140,8 @@ if($permiso>0) { ?>
         $('#daterange').daterangepicker({
             "timePicker": true,
             "timePicker24Hour": true,
-            "startDate": "<?php  date_default_timezone_set('America/Monterrey'); echo date('m/d/Y H:i:s', (strtotime (" - 360 Minute")))?>",
-            "endDate": "<?php date_default_timezone_set('America/Monterrey'); echo date('m/d/Y H:i:s', (strtotime (" - 0 Minute")))?>",
+            "startDate": "<?php  date_default_timezone_set('America/Mexico_City'); echo date('m/d/Y H:i:s', (strtotime (" - 360 Minute")))?>",
+            "endDate": "<?php date_default_timezone_set('America/Mexico_City'); echo date('m/d/Y H:i:s', (strtotime (" - 0 Minute")))?>",
             "locale": {
                 "format": "MM/DD/YYYY HH:mm",
                 "separator": " - ",
@@ -182,6 +182,10 @@ if($permiso>0) { ?>
         src="http://maps.google.com/maps/api/js?key=<?php echo $gmk; ?>&language=es-MX&callback=drawMap"></script>
 </body>
 <?php 
+include_once('helpers/LoggerApiGoogleMaps.php');
+$log = new LoggerApiGoogleMaps($conn);
+$log->saveLog($_SESSION["usuario"], 6, $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']);
+unset($log);
 }else{
     echo "<h2>No tiene permiso para acceder a este módulo.</h2>";
 }

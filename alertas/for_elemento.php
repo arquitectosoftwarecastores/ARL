@@ -428,7 +428,7 @@
             ?>
               <div class="row">
                 <div class="col-md-12">
-                  <iframe id="iframemapa" src="../app_muestramapa.php?economico=95820" width="100%" height="300px"></iframe>
+                  <iframe id="iframemapa" src="" width="100%" height="300px"></iframe>
                 </div>
               </div>
             <?php } ?>
@@ -583,7 +583,7 @@ OBSERVACION:
               ?>
                 <div class="row">
                   <div class="col-md-12">
-                    <iframe id="atendidaiframemapa" src="./alertas/app_muestramapa.php?economico=95820" width="100%" height="300px"></iframe>
+                    <iframe id="atendidaiframemapa" src="" width="100%" height="300px"></iframe>
                   </div>
                 </div>
               <?php } ?>
